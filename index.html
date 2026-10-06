@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Folio is a modern, privacy-first, ATS-friendly resume builder. Choose from 7 templates, live preview, export to PDF, and share instantly.">
+  <meta property="og:title" content="Folio – Professional Resume Builder">
+  <meta property="og:description" content="Build and customize recruiter-ready resumes in your browser. Live A4 preview, ATS scoring, PDF export, and instant public sharing.">
+  <meta property="og:type" content="website">
+  <title>Folio – Modern Resume Builder & Live Preview</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232f5bff'/><text x='50' y='68' font-size='58' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle'>F</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&amp;family=Source+Serif+4:wght@300;400;600;700&amp;family=Bricolage+Grotesque:wght@600;700;800&amp;family=Inter:wght@400;500;600;700&amp;family=Roboto:wght@400;500;700&amp;family=Open+Sans:wght@400;600;700&amp;family=Lato:wght@400;700&amp;family=Poppins:wght@400;500;600;700&amp;family=Montserrat:wght@400;500;600;700&amp;family=Nunito:wght@400;600;700&amp;family=Lora:wght@400;600;700&amp;family=Merriweather:wght@400;700&amp;family=Playfair+Display:wght@400;600;700&amp;family=EB+Garamond:wght@400;500;600&amp;display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="site-header">
+      <a class="logo" href="#editor" aria-label="Folio resume builder home">Folio<small>Resume Builder</small></a>
+      <div class="save-state" id="saveState" aria-live="polite">Saved on this device</div>
+      
+      <div class="tabs" aria-label="Mobile workspace view">
+        <button id="tEdit" class="primary" type="button">Edit</button>
+        <button id="tPrev" type="button">Preview</button>
+      </div>
+
+      <div class="header-actions">
+        <!-- Preset Templates Selector -->
+        <div class="dropdown" id="presetDropdown">
+          <button id="presetBtn" class="btn-outline" type="button" aria-haspopup="true" aria-expanded="false" title="Choose a starter template preset">
+            <span>Templates / Examples</span>
+            <span class="caret">▾</span>
+          </button>
+          <div class="dropdown-menu" id="presetMenu" role="menu">
+            <button type="button" class="dropdown-item" data-load-preset="tech">
+              <strong>Tech / CS Student</strong>
+              <small>Maya Iyer · B.Tech &amp; Projects</small>
+            </button>
+            <button type="button" class="dropdown-item" data-load-preset="business">
+              <strong>Business &amp; Marketing</strong>
+              <small>Alex Rivera · Strategy &amp; Growth</small>
+            </button>
+            <button type="button" class="dropdown-item" data-load-preset="design">
+              <strong>UI/UX &amp; Product Design</strong>
+              <small>Jordan Chen · Portfolios &amp; Apps</small>
+            </button>
+            <div class="dropdown-divider"></div>
+            <button type="button" class="dropdown-item text-danger" data-load-preset="blank">
+              <strong>Start Blank Canvas</strong>
+              <small>Clean slate for your own details</small>
+            </button>
+          </div>
+        </div>
+
+        <!-- Share Public Link Button -->
+        <button id="shareLinkBtn" class="btn-share" type="button" title="Generate a public shareable link to this resume">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+          <span>Share Link</span>
+        </button>
+
+        <!-- Data Import/Export Dropdown -->
+        <div class="dropdown" id="dataDropdown">
+          <button id="dataBtn" class="btn-outline" type="button" aria-haspopup="true" aria-expanded="false" title="Export or import resume data">
+            <span>Data ▾</span>
+          </button>
+          <div class="dropdown-menu" id="dataMenu" role="menu">
+            <button type="button" class="dropdown-item" id="exportJsonBtn">
+              <strong>Export JSON</strong>
+              <small>Save backup to file</small>
+            </button>
+            <button type="button" class="dropdown-item" id="importJsonBtn">
+              <strong>Import JSON</strong>
+              <small>Load saved resume file</small>
+            </button>
+            <button type="button" class="dropdown-item" id="exportTxtBtn">
+              <strong>Export Plain Text (.txt)</strong>
+              <small>ATS-friendly copy format</small>
+            </button>
+          </div>
+        </div>
+
+        <!-- Download PDF Button -->
+        <button id="print" class="primary btn-download" type="button" title="Save as PDF or print your resume">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Download PDF</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="hero" id="heroBanner" aria-label="How Folio works">
+      <div>
+        <p class="eyebrow">100% Free · Private in Browser · Instant PDF</p>
+        <h1>Build a resume recruiters actually finish reading.</h1>
+        <p>Pick a template, customize your experience with real-time ATS coaching, and download a crisp, professional PDF or share a direct link.</p>
+      </div>
+      <ol class="steps">
+        <li>Pick a template</li>
+        <li>Fill in your story</li>
+        <li>Download &amp; Share</li>
+      </ol>
+      <button class="hero-close" id="heroCloseBtn" type="button" aria-label="Dismiss banner" title="Dismiss banner">✕</button>
+    </section>
+
+    <main>
+      <section id="editor" aria-label="Resume editor"></section>
+      
+      <section id="stage" aria-label="Resume preview">
+        <!-- Live Preview Stage Controls -->
+        <div class="stage-toolbar">
+          <div class="stage-toolbar-left">
+            <span class="preview-tag">Live Preview</span>
+            <span class="page-tag" id="pageTag">A4 · 1 Page</span>
+          </div>
+          <div class="stage-toolbar-right">
+            <div class="zoom-controls">
+              <button type="button" id="zoomOutBtn" class="zoom-btn" title="Zoom out" aria-label="Zoom out">−</button>
+              <button type="button" id="zoomResetBtn" class="zoom-btn zoom-level" title="Reset zoom (100%)">100%</button>
+              <button type="button" id="zoomInBtn" class="zoom-btn" title="Zoom in" aria-label="Zoom in">+</button>
+              <button type="button" id="zoomFitBtn" class="zoom-btn" title="Fit to screen">Fit</button>
+            </div>
+            <button id="quickPrintBtn" class="stage-print-btn" type="button" title="Print / Download PDF">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              <span>Print / PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="fit">
+          <article id="paper" class="paper classic" aria-label="Your resume preview"></article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Share Public Link Modal -->
+  <div class="modal-backdrop" id="shareModal" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="shareModalTitle">Share Your Public Resume Link</h3>
+        <button class="modal-close" id="shareModalClose" type="button" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Anyone with this link can view this resume directly in their browser or edit their own copy. All data is embedded securely inside the link.</p>
+        
+        <div class="share-url-box">
+          <input type="text" id="shareUrlInput" readonly aria-label="Public resume URL">
+          <button id="copyShareUrlBtn" class="primary" type="button">Copy Link</button>
+        </div>
+
+        <div class="share-qr-wrap">
+          <div id="shareQrCode" class="share-qr"></div>
+          <div class="share-qr-text">
+            <strong>Scan on Mobile</strong>
+            <small>Open this resume instantly on your phone or tablet camera.</small>
+          </div>
+        </div>
+
+        <div class="share-tips">
+          <div class="share-tip-item">
+            <strong>🔗 Public Access:</strong> No account or login required for anyone viewing this link.
+          </div>
+          <div class="share-tip-item">
+            <strong>🔒 Private:</strong> Data stays in the URL hash, never stored on external databases.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" id="openShareLinkBtn">Open in New Tab ↗</button>
+        <button type="button" class="primary" id="shareModalDone">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import JSON Modal -->
+  <div class="modal-backdrop" id="importModal" role="dialog" aria-modal="true" aria-labelledby="importModalTitle" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="importModalTitle">Import Resume Data</h3>
+        <button class="modal-close" id="importModalClose" type="button" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Upload a previously saved <code>.json</code> resume file, or paste JSON content below:</p>
+        
+        <div class="file-drop-area" id="fileDropArea">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <span>Choose a JSON file or drag it here</span>
+          <input type="file" id="jsonFileInput" accept=".json,application/json">
+        </div>
+
+        <label class="modal-label" for="importJsonText">Or paste JSON content:</label>
+        <textarea id="importJsonText" placeholder="Paste your resume JSON here..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" id="importModalCancel">Cancel</button>
+        <button type="button" class="primary" id="importModalSubmit">Load Resume</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
