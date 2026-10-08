@@ -182,6 +182,106 @@ textarea { min-height: 68px; resize: vertical; }
 .paper.timeline { font-family: "Instrument Sans", system-ui, sans-serif; }.paper.timeline h2 { margin-top: 22px; color: var(--a); font-size: 15px; font-weight: 700; }.paper.timeline .e { position: relative; margin-left: 5px; padding-left: 16px; border-left: 2px solid var(--a); }.paper.timeline .e::before { content: ""; position: absolute; top: 3px; left: -6px; width: 10px; height: 10px; border: 2px solid var(--a); border-radius: 50%; background: #fff; }
 .paper.cf h1, .paper.cf h2, .paper.cf .t { font-family: inherit !important; }.paper.cmp { font-size: 11.5px !important; line-height: 1.35; }.paper.cmp h2 { margin: 13px 0 5px !important; }.paper.cmp .e { margin-bottom: 6px; }.paper.cmp .t { font-size: 13px; }
 
+/* Dynamic Preview Features & Section Toggles */
+.dynamic-badge {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.section-toggles {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+  flex-wrap: wrap;
+}
+.sec-chip {
+  padding: 3px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--mut);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sec-chip:hover {
+  border-color: var(--acc);
+  color: var(--ink);
+}
+.sec-chip.active {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
+}
+.sec-chip:not(.active) {
+  opacity: 0.55;
+  text-decoration: line-through;
+  background: #f1f5f9;
+}
+
+/* Two-Way Active Focus Highlighting */
+.is-preview-active {
+  outline: 2px solid var(--a, var(--acc)) !important;
+  outline-offset: 4px !important;
+  border-radius: 4px !important;
+  background: color-mix(in srgb, var(--a, var(--acc)) 7%, transparent) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--a, var(--acc)) 25%, transparent) !important;
+}
+
+/* Dynamic Live Editable Preview Paper */
+.paper [contenteditable="true"] {
+  outline: 1px dashed transparent;
+  border-radius: 2px;
+  transition: outline-color 0.14s ease, background-color 0.14s ease;
+  cursor: text;
+}
+.paper [contenteditable="true"]:hover {
+  outline-color: color-mix(in srgb, var(--a, var(--acc)) 45%, transparent);
+  background-color: color-mix(in srgb, var(--a, var(--acc)) 3%, transparent);
+}
+.paper [contenteditable="true"]:focus {
+  outline: 2px solid var(--a, var(--acc)) !important;
+  outline-offset: 2px !important;
+  background-color: color-mix(in srgb, var(--a, var(--acc)) 6%, transparent);
+}
+
+/* Dynamic Page Break Visual Indicator */
+.page-break-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 2px dashed #94a3b8;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+}
+.page-break-line span {
+  position: absolute;
+  top: -11px;
+  background: #334155;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 99px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+}
+
 /* Modals */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, .6); backdrop-filter: blur(4px); z-index: 200; display: grid; place-items: center; padding: 16px; }
 .modal-backdrop[hidden] { display: none; }
@@ -252,11 +352,12 @@ textarea { min-height: 68px; resize: vertical; }
 /* Print Rules */
 @media print {
   html, body, .app { height: auto; background: #fff; }
-  .site-header, .hero, #editor, .stage-toolbar, .modal-backdrop, .toast { display: none !important; }
+  .site-header, .hero, #editor, .stage-toolbar, .modal-backdrop, .toast, .page-break-line, .dynamic-badge { display: none !important; }
   main { display: block; }
   #stage { display: block !important; overflow: visible; padding: 0; background: #fff; }
   #fit { height: auto !important; transform: none !important; margin: 0; }
   .paper { width: 100%; min-height: 0 !important; padding: 0; box-shadow: none; }
+  .paper [contenteditable="true"] { outline: none !important; background: transparent !important; }
   .paper.executive .hd { margin: 0 0 6px; }
   .sb { min-height: 0 !important; }
   @page { margin: 12mm 14mm; size: A4; }

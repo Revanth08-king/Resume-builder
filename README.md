@@ -32,10 +32,13 @@ Folio is a private, client-side, ATS-friendly resume builder with real-time A4 p
    - **Export Plain Text (.txt)**: ATS-optimized plain text format.
    - **Download PDF**: Formatted for standard 1-page A4 printing.
 
-5. **Live Preview & Zoom Controls**:
-   - Interactive zoom controls (`-`, `100%`, `+`, `Fit to Screen`).
-   - Page counter and length guide to keep your resume to a single page.
-   - Reorder education, experience, and project entries (`↑ Up`, `↓ Down`).
+5. **Dynamic Live-Editable Preview & Interaction**:
+   - **Click-to-Edit On Paper**: Click and edit any section, bullet, or header directly on the resume paper with full two-way synchronization back to form inputs.
+   - **Two-Way Focus Highlighting**: Focusing any sidebar input immediately highlights and scrolls to the corresponding section on the preview with an accent outline and glow.
+   - **Section Visibility Toggles**: Interactive toggle chips (Summary, Education, Experience, Projects, Skills, Honors) to instantly include or exclude sections on the fly.
+   - **Visual A4 Page-Break Guide**: Dynamic dashed boundary indicators showing exactly where A4 pages split, ensuring single-page alignment before export.
+   - **Interactive Zoom & Fit**: Responsive zoom controls (`-`, `100%`, `+`, `Fit to Screen`) and dynamic height fitting.
+   - **Section Reordering**: Reorder education, experience, and project entries with (`↑ Up`, `↓ Down`).
 
 ---
 

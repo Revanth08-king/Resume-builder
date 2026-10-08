@@ -182,6 +182,8 @@ let acc = '#2f5bff';
 let fnt = '';
 let dens = '';
 let currentZoom = 'fit';
+let hiddenSections = { sum: false, edu: false, exp: false, proj: false, skills: false, extra: false };
+let isTypingInPaper = false;
 
 const $ = selector => document.querySelector(selector);
 const copy = value => JSON.parse(JSON.stringify(value));
@@ -566,30 +568,93 @@ function bulletList(items) {
   return items.length ? `<ul>${items.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : '';
 }
 
+function bulletListEditable(items, syncKey) {
+  return items.length ? `<ul contenteditable="true" data-sync="${syncKey}" title="Click to edit bullets directly">${items.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : '';
+}
+
+function updatePageBreakMarkers() {
+  const paper = $('#paper');
+  if (!paper) return;
+  paper.querySelectorAll('.page-break-line').forEach(el => el.remove());
+  
+  const A4_HEIGHT = 1123;
+  const totalHeight = paper.scrollHeight;
+  const pages = Math.ceil(totalHeight / A4_HEIGHT);
+  
+  for (let i = 1; i < pages; i++) {
+    const marker = document.createElement('div');
+    marker.className = 'page-break-line';
+    marker.style.top = `${i * A4_HEIGHT}px`;
+    marker.innerHTML = `<span>Page ${i} End · Page ${i + 1} Start</span>`;
+    paper.appendChild(marker);
+  }
+}
+
 function render() {
   const paper = $('#paper');
+  if (!paper) return;
   paper.className = `paper ${tpl}${dens ? ` ${dens}` : ''}${fnt ? ' cf' : ''}`;
   paper.style.fontFamily = fnt ? `"${fnt}", ${(FONTS.find(font => font[0] === fnt) || ['', 'sans-serif'])[1]}` : '';
   paper.style.setProperty('--a', acc);
-  $('#editor').style.setProperty('--a', acc);
+  const editor = $('#editor');
+  if (editor) editor.style.setProperty('--a', acc);
 
   const hasContent = item => Object.values(item).some(value => String(value || '').trim());
-  const contact = [S.email, S.phone, S.loc, S.link].filter(Boolean).map(item => `<span>${esc(item)}</span>`).join('');
-  const heading = `<div class="hd"><h1>${esc(S.name) || 'Your Name'}</h1>${S.title ? `<div class="t">${esc(S.title)}</div>` : ''}<div class="ct">${contact}</div></div>`;
-  const section = (title, body) => body ? `<h2>${title}</h2>${body}` : '';
+  const contact = [
+    S.email ? `<span contenteditable="true" data-sync="contact:email" title="Click to edit email directly">${esc(S.email)}</span>` : '',
+    S.phone ? `<span contenteditable="true" data-sync="contact:phone" title="Click to edit phone directly">${esc(S.phone)}</span>` : '',
+    S.loc ? `<span contenteditable="true" data-sync="contact:loc" title="Click to edit location directly">${esc(S.loc)}</span>` : '',
+    S.link ? `<span contenteditable="true" data-sync="contact:link" title="Click to edit link directly">${esc(S.link)}</span>` : ''
+  ].filter(Boolean).join('');
+
+  const heading = `<div class="hd" data-sec="hd">
+    <h1 contenteditable="true" data-sync="name" spellcheck="false" title="Click to edit full name directly">${esc(S.name) || 'Your Name'}</h1>
+    ${S.title ? `<div class="t" contenteditable="true" data-sync="title" spellcheck="false" title="Click to edit headline directly">${esc(S.title)}</div>` : ''}
+    <div class="ct">${contact}</div>
+  </div>`;
+
+  const section = (title, key, body) => (!hiddenSections[key] && body) ? `<section class="sec-${key}" data-sec="${key}"><h2>${title}</h2>${body}</section>` : '';
   const skills = S.skills.split(',').map(item => item.trim()).filter(Boolean);
+
   const content = {
-    sum: section('Summary', S.summary ? `<p>${esc(S.summary)}</p>` : ''),
-    edu: section('Education', S.edu.filter(hasContent).map(item => `<div class="e"><div class="r"><b>${esc(item.school)}</b><span>${esc(item.dates)}</span></div><div>${esc(item.degree)}</div>${item.detail ? `<div class="sub">${esc(item.detail)}</div>` : ''}</div>`).join('')),
-    exp: section('Experience', S.exp.filter(hasContent).map(item => `<div class="e"><div class="r"><b>${esc(item.role)}</b><span>${esc(item.dates)}</span></div><div class="sub">${esc(item.org)}</div>${bulletList(lines(item.bullets))}</div>`).join('')),
-    proj: section('Projects', S.proj.filter(hasContent).map(item => `<div class="e"><div class="r"><b>${esc(item.name)}</b><span>${esc(item.tech)}</span></div>${bulletList(lines(item.bullets))}</div>`).join('')),
-    skills: section('Skills', skills.length ? (tpl === 'sidebar' ? `<ul class="sk">${skills.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : `<p>${esc(skills.join(', '))}</p>`) : ''),
-    extra: section('Activities &amp; Leadership', bulletList(lines(S.extra)))
+    sum: section('Summary', 'sum', S.summary ? `<p contenteditable="true" data-sync="summary" spellcheck="true" title="Click to edit summary directly">${esc(S.summary)}</p>` : ''),
+    edu: section('Education', 'edu', S.edu.filter(hasContent).map((item, idx) => `
+      <div class="e" data-sec="edu:${idx}">
+        <div class="r">
+          <b contenteditable="true" data-sync="edu:${idx}:school" title="Click to edit school directly">${esc(item.school)}</b>
+          <span contenteditable="true" data-sync="edu:${idx}:dates" title="Click to edit dates directly">${esc(item.dates)}</span>
+        </div>
+        <div contenteditable="true" data-sync="edu:${idx}:degree" title="Click to edit degree directly">${esc(item.degree)}</div>
+        ${item.detail ? `<div class="sub" contenteditable="true" data-sync="edu:${idx}:detail" title="Click to edit details directly">${esc(item.detail)}</div>` : ''}
+      </div>`).join('')),
+    exp: section('Experience', 'exp', S.exp.filter(hasContent).map((item, idx) => `
+      <div class="e" data-sec="exp:${idx}">
+        <div class="r">
+          <b contenteditable="true" data-sync="exp:${idx}:role" title="Click to edit role directly">${esc(item.role)}</b>
+          <span contenteditable="true" data-sync="exp:${idx}:dates" title="Click to edit dates directly">${esc(item.dates)}</span>
+        </div>
+        <div class="sub" contenteditable="true" data-sync="exp:${idx}:org" title="Click to edit organization directly">${esc(item.org)}</div>
+        ${bulletListEditable(lines(item.bullets), `exp:${idx}:bullets`)}
+      </div>`).join('')),
+    proj: section('Projects', 'proj', S.proj.filter(hasContent).map((item, idx) => `
+      <div class="e" data-sec="proj:${idx}">
+        <div class="r">
+          <b contenteditable="true" data-sync="proj:${idx}:name" title="Click to edit project name directly">${esc(item.name)}</b>
+          <span contenteditable="true" data-sync="proj:${idx}:tech" title="Click to edit tech stack directly">${esc(item.tech)}</span>
+        </div>
+        ${bulletListEditable(lines(item.bullets), `proj:${idx}:bullets`)}
+      </div>`).join('')),
+    skills: section('Skills', 'skills', skills.length ? (tpl === 'sidebar' ? `<ul class="sk" contenteditable="true" data-sync="skills" title="Click to edit skills directly">${skills.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : `<p contenteditable="true" data-sync="skills" title="Click to edit skills directly">${esc(skills.join(', '))}</p>`) : ''),
+    extra: section('Activities &amp; Leadership', 'extra', bulletListEditable(lines(S.extra), 'extra'))
   };
-  paper.innerHTML = tpl === 'sidebar' ? `<div class="sb"><aside>${heading}${content.skills}${content.extra}</aside><div class="mn">${content.sum}${content.edu}${content.exp}${content.proj}</div></div>` : heading + content.sum + content.edu + content.exp + content.proj + content.skills + content.extra;
+
+  paper.innerHTML = tpl === 'sidebar' 
+    ? `<div class="sb"><aside>${heading}${content.skills}${content.extra}</aside><div class="mn">${content.sum}${content.edu}${content.exp}${content.proj}</div></div>` 
+    : heading + content.sum + content.edu + content.exp + content.proj + content.skills + content.extra;
   
   fit();
   score();
+  updatePageBreakMarkers();
 }
 
 function fit() {
@@ -687,6 +752,7 @@ function openShareModal() {
 /* Event Listeners */
 document.addEventListener('input', event => {
   const target = event.target;
+  if (!target.closest('#editor')) return;
   if (target.dataset.k) S[target.dataset.k] = target.value;
   else if (target.dataset.s) S[target.dataset.s][Number(target.dataset.i)][target.dataset.f] = target.value;
   else return;
@@ -694,10 +760,123 @@ document.addEventListener('input', event => {
   render();
 });
 
+// Direct in-preview editing two-way sync
+const paperEl = $('#paper');
+if (paperEl) {
+  paperEl.addEventListener('input', event => {
+    const target = event.target.closest('[data-sync]');
+    if (!target) return;
+    isTypingInPaper = true;
+    const sync = target.dataset.sync;
+    const text = (target.innerText != null ? target.innerText : target.textContent).trim();
+
+    if (sync === 'name') {
+      S.name = text;
+      const inp = $('input[data-k="name"]');
+      if (inp) inp.value = text;
+    } else if (sync === 'title') {
+      S.title = text;
+      const inp = $('input[data-k="title"]');
+      if (inp) inp.value = text;
+    } else if (sync === 'summary') {
+      S.summary = text;
+      const inp = $('textarea[data-k="summary"]');
+      if (inp) inp.value = text;
+    } else if (sync === 'skills') {
+      S.skills = text;
+      const inp = $('textarea[data-k="skills"]');
+      if (inp) inp.value = text;
+    } else if (sync === 'extra') {
+      const liItems = Array.from(target.querySelectorAll('li')).map(li => li.textContent.trim()).filter(Boolean);
+      S.extra = liItems.length ? liItems.join('\n') : text;
+      const inp = $('textarea[data-k="extra"]');
+      if (inp) inp.value = S.extra;
+    } else if (sync.startsWith('contact:')) {
+      const field = sync.split(':')[1];
+      S[field] = text;
+      const inp = $(`input[data-k="${field}"]`);
+      if (inp) inp.value = text;
+    } else if (sync.startsWith('edu:') || sync.startsWith('exp:') || sync.startsWith('proj:')) {
+      const parts = sync.split(':');
+      const sec = parts[0];
+      const idx = Number(parts[1]);
+      const field = parts[2];
+      if (S[sec] && S[sec][idx]) {
+        if (field === 'bullets') {
+          const liItems = Array.from(target.querySelectorAll('li')).map(li => li.textContent.trim()).filter(Boolean);
+          S[sec][idx].bullets = liItems.length ? liItems.join('\n') : text;
+          const inp = $(`textarea[data-s="${sec}"][data-i="${idx}"][data-f="bullets"]`);
+          if (inp) inp.value = S[sec][idx].bullets;
+        } else {
+          S[sec][idx][field] = text;
+          const inp = $(`[data-s="${sec}"][data-i="${idx}"][data-f="${field}"]`);
+          if (inp) inp.value = text;
+        }
+      }
+    }
+
+    save();
+    score();
+    fit();
+    updatePageBreakMarkers();
+  });
+
+  paperEl.addEventListener('focusout', () => {
+    if (isTypingInPaper) {
+      isTypingInPaper = false;
+      render();
+    }
+  });
+}
+
+// Two-Way Active Focus Highlighting
+document.addEventListener('focusin', event => {
+  const target = event.target;
+  if (!target || !target.dataset) return;
+  const k = target.dataset.k;
+  const s = target.dataset.s;
+  const i = target.dataset.i;
+
+  document.querySelectorAll('.is-preview-active').forEach(el => el.classList.remove('is-preview-active'));
+
+  let selector = '';
+  if (k === 'name' || k === 'title') selector = `[data-sync="${k}"]`;
+  else if (k && ['email', 'phone', 'loc', 'link'].includes(k)) selector = `[data-sync="contact:${k}"]`;
+  else if (k === 'summary') selector = `[data-sync="summary"]`;
+  else if (k === 'skills') selector = `[data-sync="skills"]`;
+  else if (k === 'extra') selector = `[data-sync="extra"]`;
+  else if (s && i !== undefined) selector = `[data-sec="${s}:${i}"]`;
+
+  if (selector) {
+    const match = document.querySelector(`#paper ${selector}`);
+    if (match) {
+      match.classList.add('is-preview-active');
+      match.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+});
+
+document.addEventListener('focusout', event => {
+  if (event.target && event.target.closest && event.target.closest('#editor')) {
+    document.querySelectorAll('.is-preview-active').forEach(el => el.classList.remove('is-preview-active'));
+  }
+});
+
 document.addEventListener('click', event => {
   // Dropdown close on outside click
   if (!event.target.closest('.dropdown')) {
     closeAllDropdowns();
+  }
+
+  // Dynamic section visibility toggle
+  const toggleBtn = event.target.closest('[data-toggle-sec]');
+  if (toggleBtn) {
+    const secKey = toggleBtn.dataset.toggleSec;
+    hiddenSections[secKey] = !hiddenSections[secKey];
+    toggleBtn.classList.toggle('active', !hiddenSections[secKey]);
+    render();
+    showToast(`${hiddenSections[secKey] ? 'Hidden' : 'Shown'} ${toggleBtn.textContent.trim()} section`);
+    return;
   }
 
   const button = event.target.closest('button');
