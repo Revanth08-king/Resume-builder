@@ -319,11 +319,11 @@ function buildEditor() {
     </div>
     <div class="score" aria-live="polite"><b>Resume strength: <span id="pct">0</span>%</b><div class="bar"><i id="barfill"></i></div><ul class="chk" id="chk"></ul><p class="hint" id="pg"></p></div>
     <section class="coach" id="coach" aria-live="polite"></section>
-    <details open><summary>Personal Information</summary><div class="body">${top('name', 'Full name', S.name)}${top('title', 'Headline / Target Role', S.title)}<div class="row">${top('email', 'Email', S.email)}${top('phone', 'Phone', S.phone)}</div><div class="row">${top('loc', 'City, country', S.loc)}${top('link', 'Portfolio, GitHub or LinkedIn', S.link)}</div></div></details>
-    <details open><summary>Summary Statement</summary><div class="body">${top('summary', 'Two sentences: who you are and what you want next', S.summary, true)}<p class="hint">Mention one tangible result you are proud of and the role you are aiming for.</p></div></details>
-    ${Object.keys(SEC).map(key => `<details open><summary>${SEC[key].label}</summary><div class="body" id="list-${key}">${list(key)}</div></details>`).join('')}
-    <details open><summary>Skills</summary><div class="body">${top('skills', 'Separate with commas', S.skills, true)}</div></details>
-    <details open><summary>Activities, Leadership &amp; Awards</summary><div class="body">${top('extra', 'One per line', S.extra, true)}</div></details>`;
+    <details open data-sec-editor="hd"><summary>Personal Information</summary><div class="body">${top('name', 'Full name', S.name)}${top('title', 'Headline / Target Role', S.title)}<div class="row">${top('email', 'Email', S.email)}${top('phone', 'Phone', S.phone)}</div><div class="row">${top('loc', 'City, country', S.loc)}${top('link', 'Portfolio, GitHub or LinkedIn', S.link)}</div></div></details>
+    <details open data-sec-editor="sum"><summary>Summary Statement</summary><div class="body">${top('summary', 'Two sentences: who you are and what you want next', S.summary, true)}<p class="hint">Mention one tangible result you are proud of and the role you are aiming for.</p></div></details>
+    ${Object.keys(SEC).map(key => `<details open data-sec-editor="${key}"><summary>${SEC[key].label}</summary><div class="body" id="list-${key}">${list(key)}</div></details>`).join('')}
+    <details open data-sec-editor="skills"><summary>Skills</summary><div class="body">${top('skills', 'Separate with commas', S.skills, true)}</div></details>
+    <details open data-sec-editor="extra"><summary>Activities, Leadership &amp; Awards</summary><div class="body">${top('extra', 'One per line', S.extra, true)}</div></details>`;
   $('#fnt').value = fnt;
   $('#dens').value = dens;
 }
@@ -661,6 +661,8 @@ function fit() {
   const paper = $('#paper');
   const stage = $('#stage');
   const fitBox = $('#fit');
+  if (!paper || !stage || !fitBox) return;
+
   const previewWidth = stage.clientWidth - (window.innerWidth <= 900 ? 24 : 48);
 
   paper.style.minHeight = '1123px';
@@ -670,14 +672,14 @@ function fit() {
   
   const pageTag = $('#pageTag');
   if (pageTag) {
-    pageTag.textContent = `A4 · ${pages} Page${pages === 1 ? '' : 's'}`;
+    pageTag.textContent = `📄 A4 Sheet · ${pages} Page${pages === 1 ? '' : 's'} (210×297mm)`;
     pageTag.style.background = pages === 1 ? '#e0f2fe' : '#fef3c7';
     pageTag.style.color = pages === 1 ? '#0369a1' : '#b45309';
   }
 
   const guidance = $('#pg');
   if (guidance) {
-    guidance.textContent = pages === 1 ? 'Length: 1 page. Perfect length for student & junior roles.' : `Length: ${pages} pages. Try Compact size or trim older details to fit 1 page.`;
+    guidance.textContent = pages === 1 ? 'Length: 1 A4 Page. Perfect length for student & junior roles.' : `Length: ${pages} A4 Pages. Try Compact size or trim older details to fit 1 page.`;
   }
 
   if (previewWidth <= 0) return;
@@ -829,6 +831,96 @@ if (paperEl) {
   });
 }
 
+let isSyncingScroll = false;
+let syncScrollTimer = null;
+
+function setupScrollSync() {
+  const editorEl = $('#editor');
+  const stageEl = $('#stage');
+  const activeSecTag = $('#activeSecTag');
+  if (!editorEl || !stageEl) return;
+
+  const sectionLabels = {
+    hd: 'Info',
+    sum: 'Summary',
+    edu: 'Education',
+    exp: 'Experience',
+    proj: 'Projects',
+    skills: 'Skills',
+    extra: 'Awards'
+  };
+
+  function updateActiveHighlight(secKey) {
+    document.querySelectorAll('.is-scrolling-active').forEach(el => el.classList.remove('is-scrolling-active'));
+
+    if (activeSecTag) {
+      activeSecTag.textContent = `📍 ${sectionLabels[secKey] || secKey}`;
+    }
+
+    document.querySelectorAll('.sec-chip-group').forEach(group => {
+      const chipKey = group.dataset.secChip;
+      if (chipKey === secKey) {
+        group.classList.add('is-viewing');
+      } else {
+        group.classList.remove('is-viewing');
+      }
+    });
+
+    const paperMatch = document.querySelector(`#paper [data-sec="${secKey}"]`) || document.querySelector(`#paper [data-sec^="${secKey}:"]`);
+    if (paperMatch) {
+      paperMatch.classList.add('is-scrolling-active');
+    }
+  }
+
+  // When user scrolls editor, scroll preview smoothly to matching section
+  editorEl.addEventListener('scroll', () => {
+    if (isSyncingScroll) return;
+
+    const editorRect = editorEl.getBoundingClientRect();
+    const detailsList = editorEl.querySelectorAll('details[data-sec-editor]');
+    let currentSec = 'hd';
+
+    for (const det of detailsList) {
+      const rect = det.getBoundingClientRect();
+      if (rect.top - editorRect.top <= 140) {
+        currentSec = det.dataset.secEditor;
+      }
+    }
+
+    updateActiveHighlight(currentSec);
+
+    const targetPaperSec = document.querySelector(`#paper [data-sec="${currentSec}"]`) || document.querySelector(`#paper [data-sec^="${currentSec}:"]`);
+    if (targetPaperSec) {
+      isSyncingScroll = true;
+      const stageRect = stageEl.getBoundingClientRect();
+      const targetRect = targetPaperSec.getBoundingClientRect();
+      const offset = targetRect.top - stageRect.top + stageEl.scrollTop - 70;
+      stageEl.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+
+      clearTimeout(syncScrollTimer);
+      syncScrollTimer = setTimeout(() => { isSyncingScroll = false; }, 320);
+    }
+  }, { passive: true });
+
+  // When user scrolls preview, update active section tag and chip
+  stageEl.addEventListener('scroll', () => {
+    if (isSyncingScroll) return;
+
+    const stageRect = stageEl.getBoundingClientRect();
+    const paperSections = document.querySelectorAll('#paper [data-sec]');
+    let currentSec = 'hd';
+
+    for (const sec of paperSections) {
+      const rect = sec.getBoundingClientRect();
+      if (rect.top - stageRect.top <= 140) {
+        currentSec = (sec.dataset.sec || '').split(':')[0];
+      }
+    }
+
+    updateActiveHighlight(currentSec);
+  }, { passive: true });
+}
+
 // Two-Way Active Focus Highlighting
 document.addEventListener('focusin', event => {
   const target = event.target;
@@ -868,14 +960,41 @@ document.addEventListener('click', event => {
     closeAllDropdowns();
   }
 
+  // Dynamic section navigation click
+  const navBtn = event.target.closest('[data-nav-sec]');
+  if (navBtn) {
+    const secKey = navBtn.dataset.navSec;
+    const editorSec = document.querySelector(`details[data-sec-editor="${secKey}"]`);
+    if (editorSec) {
+      editorSec.open = true;
+      editorSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    const paperSec = document.querySelector(`#paper [data-sec="${secKey}"]`) || document.querySelector(`#paper [data-sec^="${secKey}:"]`);
+    if (paperSec) {
+      const stageEl = $('#stage');
+      const stageRect = stageEl.getBoundingClientRect();
+      const targetRect = paperSec.getBoundingClientRect();
+      const offset = targetRect.top - stageRect.top + stageEl.scrollTop - 70;
+      stageEl.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+      document.querySelectorAll('.is-scrolling-active').forEach(el => el.classList.remove('is-scrolling-active'));
+      paperSec.classList.add('is-scrolling-active');
+    }
+    showToast(`Navigated to ${navBtn.textContent.trim()} section`);
+    return;
+  }
+
   // Dynamic section visibility toggle
   const toggleBtn = event.target.closest('[data-toggle-sec]');
   if (toggleBtn) {
     const secKey = toggleBtn.dataset.toggleSec;
     hiddenSections[secKey] = !hiddenSections[secKey];
-    toggleBtn.classList.toggle('active', !hiddenSections[secKey]);
+    const chipGroup = toggleBtn.closest('.sec-chip-group');
+    if (chipGroup) {
+      chipGroup.classList.toggle('is-hidden', hiddenSections[secKey]);
+    }
+    toggleBtn.textContent = hiddenSections[secKey] ? '🙈' : '👁';
     render();
-    showToast(`${hiddenSections[secKey] ? 'Hidden' : 'Shown'} ${toggleBtn.textContent.trim()} section`);
+    showToast(`${hiddenSections[secKey] ? 'Hidden' : 'Shown'} ${secKey.toUpperCase()} section`);
     return;
   }
 
@@ -1046,3 +1165,4 @@ window.addEventListener('resize', fit);
 load();
 buildEditor();
 render();
+setupScrollSync();
